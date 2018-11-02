@@ -1,0 +1,3 @@
+name: Simple2FA
+main: io.dreamz.simple2fa.Simple2FA
+version: 1.0.0

@@ -1,0 +1,79 @@
+def getMavenSettingsCredentials() {
+    String userHome = System.getProperty( "user.home" );
+    File mavenSettings = new File(userHome, ".m2/settings.xml")
+    def xmlSlurper = new XmlSlurper()
+    def output = xmlSlurper.parse(mavenSettings)
+    return output."servers"."server"
+}
+
+def getCredentials(String repo) {
+    def entries = getMavenSettingsCredentials()
+    for (entry in entries) {
+        if ( entry."id".text().equals(repo) ) {
+            return [username: entry.username.text(), password: entry.password.text()]
+        }
+    }
+}
+
+
+plugins {
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm' version '1.3.0'
+    id "com.github.johnrengelman.shadow" version "4.0.2" // Shadow plugin for creating Uber Jars
+}
+
+apply plugin: "kotlin"
+apply plugin: 'application'
+
+group 'io.dreamz'
+version '1.0-SNAPSHOT'
+mainClassName = "io.dreamz.simple2fa.Main"
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+
+    maven {
+        name 'dreamz-repo'
+        url 'http://147.135.1.142:8081/repository/dreamz/'
+
+        def creds = getCredentials('dreamz-repo')
+
+        credentials {
+            username creds['username']
+            password creds['password']
+        }
+
+        authentication {
+            basic(BasicAuthentication)
+        }
+    }
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile 'com.google.zxing:core:3.3.0'
+    compile 'com.google.zxing:javase:3.3.0'
+
+    compileOnly 'io.dreamz:dspigot-api:1.12.2-R0.1'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+// Create an UBER jar which includes the kotlin stdlib and ZXing code
+shadowJar {
+   dependencies {
+       include dependency('org.jetbrains.kotlin:kotlin-stdlib')
+       include dependency("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+       include dependency('com.google.zxing:core:3.3.0')
+       include dependency('com.google.zxing:javase:3.3.0')
+   }
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
