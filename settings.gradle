@@ -1,2 +1,3 @@
 rootProject.name = 'simple-2fa'
 
+include 'simple2fa-bukkit'
