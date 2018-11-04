@@ -1,0 +1,59 @@
+plugins {
+    id "com.github.johnrengelman.shadow" version "4.0.2" // Shadow plugin for creating Uber Jars
+}
+
+
+group 'io.dreamz'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+repositories {
+    // Spigot
+    maven { url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+
+    // ChatComponent
+    maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile 'com.google.zxing:core:3.3.0'
+    compile 'com.google.zxing:javase:3.3.0'
+
+    // compile against latest, but keep backwards compatibility by only using
+    // Bukkit features from 1.7
+    compileOnly 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
+
+    compileClasspath 'org.jetbrains.kotlin:kotlin-stdlib'
+}
+
+
+// Create an UBER jar which includes the kotlin stdlib and ZXing code
+shadowJar {
+    dependencies {
+        include dependency('com.google.zxing:core:3.3.0')
+        include dependency('com.google.zxing:javase:3.3.0')
+    }
+}
+
+jar {
+    manifest {
+        // include the stdlib in our classpath instead to reduce size
+        attributes 'Class-Path': "../libs/kotlin-stdlib-1.3.0.jar ../libs/kotlin-stdlib-jdk8-1.3.0 ../libs/kotlin-stdlib-common-1.3.0.jar"
+
+    }
+}
+
