@@ -27,7 +27,7 @@ dependencies {
     // BungeeCord 1.12
     compileOnly 'net.md-5:bungeecord-api:1.12-SNAPSHOT'
      // BungeeCord javadoc
-    javadoc 'net.md-5:bungeecord-api:1.12-SNAPSHOT'
+//    javadoc 'net.md-5:bungeecord-api:1.12-SNAPSHOT'
 
     compileClasspath 'org.jetbrains.kotlin:kotlin-stdlib'
 }
