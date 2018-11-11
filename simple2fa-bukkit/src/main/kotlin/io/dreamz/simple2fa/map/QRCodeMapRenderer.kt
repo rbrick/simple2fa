@@ -7,7 +7,13 @@ import org.bukkit.map.MapView
 import java.awt.Image
 
 class QRCodeMapRenderer(private val renderedImage: Image) : MapRenderer() {
-    override fun render(view: MapView?, canvas: MapCanvas?, player: Player?) {
-        canvas?.drawImage(0, 0, renderedImage)
+    var hasRendered = false
+    override fun render(view: MapView?, canvas: MapCanvas?, player: Player?) = when {
+        !hasRendered -> {
+            canvas?.drawImage(0, 0, this.renderedImage)
+            hasRendered = false
+        }
+        else -> Unit
     }
+
 }
