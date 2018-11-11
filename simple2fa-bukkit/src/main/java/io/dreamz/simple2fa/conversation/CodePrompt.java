@@ -1,11 +1,11 @@
 package io.dreamz.simple2fa.conversation;
 
 import io.dreamz.simple2fa.Simple2FA;
-import io.dreamz.simple2fa.storage.StorageEngine;
-import io.dreamz.simple2fa.utils.HOTP;
+import io.dreamz.simple2fa.session.Session;
 import org.bukkit.ChatColor;
 import org.bukkit.conversations.ConversationContext;
 import org.bukkit.conversations.Prompt;
+import org.bukkit.entity.Player;
 
 import java.util.UUID;
 
@@ -22,25 +22,45 @@ public final class CodePrompt implements Prompt {
 
     @Override
     public Prompt acceptInput(ConversationContext context, String input) {
-        final HOTP instance = Simple2FA.getInstance().getTotp();
-        final StorageEngine storage = Simple2FA.getInstance().getStorageEngine();
-
         final UUID id = (UUID) context.getSessionData("uuid");
-        final byte[] secret = storage.getRawSecret(id);
+        final Session session = Simple2FA.getInstance().getSessions().get(id);
 
-        if (secret == null) {
-            context.getForWhom().sendRawMessage(ChatColor.RED + "No key found!");
-            return END_OF_CONVERSATION;
+        if (context.getAllSessionData().containsKey("attempts") &&
+                context.getAllSessionData().get("attempts") instanceof Integer) {
+            int attempts = (Integer) context.getAllSessionData().get("attempts");
+            if (attempts > 5) {
+                session.getPlayer().kickPlayer(ChatColor.RED + "Too many attempts!");
+                return END_OF_CONVERSATION;
+            }
         }
 
-        if (!instance.verify(input, secret, 2)) {
-            context.getForWhom().sendRawMessage(ChatColor.RED + "Invalid code!");
+        if (!session.authenticate(input)) {
+            context.getAllSessionData().putIfAbsent("attempts", 0);
+            context.getAllSessionData().compute("attempts", (k, v) -> {
+                if (v instanceof Integer) {
+                    return ((Integer) v) + 1;
+                }
+                return -1;
+            });
+            // send attempt count
+            context.getForWhom().sendRawMessage(ChatColor.translateAlternateColorCodes('&',
+                    String.format("&cInvalid code! (Attempts: &e%d&c)",
+                            (Integer) context.getAllSessionData().get("attempts"))
+            ));
             return this;
         }
 
         return new Prompt() {
             @Override
             public String getPromptText(ConversationContext context) {
+                final UUID playerUuid = (UUID) context.getAllSessionData().get("uuid");
+                final Session session = Simple2FA.getInstance().getSessions().get(playerUuid);
+                final Player player = session.getPlayer();
+
+                if (player != null) {
+                    player.getInventory().setContents(session.getInventorySnapshot().getContents());
+                }
+
                 return ChatColor.GREEN + "Successfully authenticated.";
             }
 

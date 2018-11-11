@@ -10,7 +10,6 @@ import java.io.File
 import java.util.*
 
 
-
 const val PLUGIN_PREFIX = "&6[&aSimple2FA&6]"
 const val PLUGIN_PERMISSION = "simple2fa.require_auth"
 
@@ -21,9 +20,11 @@ class Simple2FA : JavaPlugin() {
     val sessions = mutableMapOf<UUID, Session>()
     val storageEngine = StorageEngineBuilder().withFile(File("secrets.yml")).create()
 
+    val issuer = config.getString("issuer")
 
     companion object {
-        @JvmStatic lateinit var instance: Simple2FA
+        @JvmStatic
+        lateinit var instance: Simple2FA
     }
 
     init {

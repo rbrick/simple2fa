@@ -13,11 +13,13 @@ import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.Material
 import org.bukkit.conversations.ConversationFactory
+import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.ItemStack
+import java.awt.Image
 
 
 object JoinListener : Listener {
@@ -39,36 +41,39 @@ object JoinListener : Listener {
             event.player.inventory.clear()
             event.player.updateInventory()
 
-            if (Simple2FA.instance.storageEngine.hasSecret(event.player.uniqueId)) {
-                // immediately begin asking for the code
-                factory.withFirstPrompt(CodePrompt())
-                        .withInitialSessionData(mapOf(Pair("uuid", event.player.uniqueId)))
-                        .buildConversation(event.player).begin()
-            } else {
+            // immediately begin asking for the code
+            factory.withFirstPrompt(CodePrompt())
+                    .withInitialSessionData(mapOf(Pair("uuid", event.player.uniqueId)))
+                    .buildConversation(event.player).begin()
 
-                event.player.itemInHand = ItemStack(Material.MAP)
-                val view = Bukkit.createMap(event.player.world)
-
-                view.renderers.clear()
-
-                val sharedSecret = KeyGenerator.generate()
-
-                Simple2FA.instance.storageEngine.storeSecret(event.player.uniqueId, sharedSecret)
-
-                val qrCode = QRCodeGenerator.generate(
-                        OTPAuthUri("totp", event.player.name, mapOf(
-                                Pair("secret", sharedSecret),
-                                Pair("issuer", "DreamZ")
-                        )).toString(), 128, 128)
-
-                view.addRenderer(QRCodeMapRenderer(qrCode))
-
-                event.player.itemInHand.durability = view.id
-
-
-                event.player.sendMap(view)
+            if (!Simple2FA.instance.storageEngine.hasSecret(event.player.uniqueId)) {
+                this.giveMap(event.player)
             }
         }
+    }
+
+    private fun giveMap(player: Player) {
+        val view = Bukkit.createMap(player.world)
+        val item = ItemStack(Material.MAP, 1, view.id)
+
+        view.renderers.clear()
+        view.addRenderer(QRCodeMapRenderer(this.genQR(player)))
+
+        player.itemInHand = item
+        player.sendMap(view)
+    }
+
+    private fun genQR(player: Player): Image {
+        val sharedSecret = KeyGenerator.generate()
+        // store the shared secret
+        Simple2FA.instance.storageEngine.storeSecret(player.uniqueId, sharedSecret)
+
+        return QRCodeGenerator.generate(
+                OTPAuthUri("totp", player.name, mapOf(
+                        Pair("secret", sharedSecret),
+                        Pair("issuer", Simple2FA.instance.issuer)
+                )).toString(), 128, 128)
+
     }
 }
 

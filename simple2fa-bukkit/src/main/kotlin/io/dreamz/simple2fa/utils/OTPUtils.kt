@@ -1,15 +1,16 @@
 package io.dreamz.simple2fa.utils
 
 import io.dreamz.simple2fa.Simple2FA
+import kotlin.reflect.KProperty
 
 // the URI format is like
 // otpauth://TYPE/LABEL?PARAMETERS
 const val FORMAT = "otpauth://%s/%s?%s"
 
-class OTPAuthUri(val type: String = "totp",
+class OTPAuthUri(val type: String,
                  val label: String,
                  val parameters: Map<String, String>) {
-    override fun toString(): String {
+    operator fun getValue(nothing: Nothing?, property: KProperty<*>): String {
         var encodedParameters = ""
         parameters.forEach { k, v -> encodedParameters = "$k=$v&$encodedParameters" }
         encodedParameters.dropLast(0)

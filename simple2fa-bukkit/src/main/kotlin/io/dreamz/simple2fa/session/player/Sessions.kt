@@ -1,5 +1,6 @@
 package io.dreamz.simple2fa.session.player
 
+import io.dreamz.simple2fa.Simple2FA
 import io.dreamz.simple2fa.session.Session
 import org.bukkit.Bukkit
 import org.bukkit.Location
@@ -11,7 +12,7 @@ class PlayerSession(private val uuid: UUID,
                     private val inventory: Inventory,
                     private val location: Location) : Session {
 
-    private var needsAuthentication = false
+    private var needsAuthentication = true
     private var authenticated = false
 
     override fun needsAuthentication(): Boolean = needsAuthentication
@@ -20,7 +21,15 @@ class PlayerSession(private val uuid: UUID,
     override fun getLocationSnapshot(): Location = location
     override fun getPlayer(): Player = Bukkit.getPlayer(uuid)
 
-    override fun authenticate(code: String?) {
+    override fun authenticate(code: String?): Boolean {
+        val totp = Simple2FA.instance.totp
+        val sessionKey = Simple2FA.instance.storageEngine.getRawSecret(uuid)
+        if (totp.verify(code!!, sessionKey!!, 2)) {
+            this.authenticated = true
+            this.needsAuthentication = false
+            return true
+        }
+        return false
     }
 }
 

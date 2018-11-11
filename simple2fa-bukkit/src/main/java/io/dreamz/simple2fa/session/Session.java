@@ -20,7 +20,12 @@ public interface Session {
      */
     boolean needsAuthentication();
 
-    void authenticate(String code);
+    /**
+     * Authenticates a user
+     * @param code The code to enter
+     * @return false if authentication failed
+     */
+    boolean authenticate(String code);
 
 
     /**
