@@ -6,10 +6,11 @@ import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
+import org.bukkit.inventory.ItemStack
 import java.util.*
 
 class PlayerSession(private val uuid: UUID,
-                    private val inventory: Inventory,
+                    private val inventory: Array<ItemStack>,
                     private val location: Location) : Session {
 
     private var needsAuthentication = true
@@ -17,7 +18,7 @@ class PlayerSession(private val uuid: UUID,
 
     override fun needsAuthentication(): Boolean = needsAuthentication
     override fun isAuthenticated(): Boolean = !needsAuthentication && authenticated
-    override fun getInventorySnapshot(): Inventory = inventory
+    override fun getInventorySnapshot(): Array<out ItemStack>? = inventory
     override fun getLocationSnapshot(): Location = location
     override fun getPlayer(): Player = Bukkit.getPlayer(uuid)
 
@@ -35,5 +36,5 @@ class PlayerSession(private val uuid: UUID,
 
 object Sessions {
     @JvmStatic
-    fun ofPlayer(player: Player) = PlayerSession(player.uniqueId, player.inventory, player.location)
+    fun ofPlayer(player: Player) = PlayerSession(player.uniqueId, player.inventory.contents.clone(), player.location.clone())
 }

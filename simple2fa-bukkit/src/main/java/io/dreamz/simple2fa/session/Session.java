@@ -3,6 +3,8 @@ package io.dreamz.simple2fa.session;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 public interface Session {
 
@@ -46,7 +48,7 @@ public interface Session {
      *
      * @return Their previous inventory
      */
-    Inventory getInventorySnapshot();
+    ItemStack[] getInventorySnapshot();
 
     Player getPlayer();
 }

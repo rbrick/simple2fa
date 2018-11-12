@@ -58,7 +58,7 @@ public final class CodePrompt implements Prompt {
                 final Player player = session.getPlayer();
 
                 if (player != null) {
-                    player.getInventory().setContents(session.getInventorySnapshot().getContents());
+                    player.getInventory().setContents(session.getInventorySnapshot());
                 }
 
                 return ChatColor.GREEN + "Successfully authenticated.";
