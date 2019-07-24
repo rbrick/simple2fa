@@ -8,7 +8,7 @@ const val FORMAT = "otpauth://%s/%s?%s"
 
 class OTPAuthUri(val type: String,
                  val label: String,
-                 val parameters: Map<String, String>) {
+                 val parameters: Map<String, Any>) {
     override fun toString(): String {
         var encodedParameters = ""
         parameters.forEach { k, v -> encodedParameters = "$k=$v&$encodedParameters" }

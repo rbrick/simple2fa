@@ -32,7 +32,7 @@ import java.util.Locale;
  * @author sweis@google.com (Steve Weis)
  * @author Neal Gafter
  */
-public class Base32String {
+public final class Base32String {
   // singleton
 
   private static final Base32String INSTANCE =

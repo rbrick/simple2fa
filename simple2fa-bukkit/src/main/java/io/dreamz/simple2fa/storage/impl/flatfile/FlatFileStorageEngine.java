@@ -1,4 +1,4 @@
-package io.dreamz.simple2fa.storage.flatfile;
+package io.dreamz.simple2fa.storage.impl.flatfile;
 
 import io.dreamz.simple2fa.storage.StorageEngine;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -9,11 +9,19 @@ import java.util.UUID;
 
 public final class FlatFileStorageEngine implements StorageEngine {
 
-    public static class FlatFileStorageEngineFactory implements StorageEngine.Factory {
+    public static class FlatFileStorageEngineFactory implements Factory {
         private File file;
 
         public FlatFileStorageEngineFactory(File file) {
             this.file = file;
+
+            if (!this.file.exists()) {
+                try {
+                    file.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         @Override
@@ -44,7 +52,6 @@ public final class FlatFileStorageEngine implements StorageEngine {
     public void storeSecret(UUID uniqueId, String secret) {
         this.yamlConfiguration.set(uniqueId.toString(), secret);
     }
-
     @Override
     public String getSecret(UUID uniqueId) {
         return this.yamlConfiguration.getString(uniqueId.toString());

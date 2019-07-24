@@ -4,8 +4,11 @@ import io.dreamz.simple2fa.PLUGIN_PERMISSION
 import io.dreamz.simple2fa.PLUGIN_PREFIX
 import io.dreamz.simple2fa.Simple2FA
 import io.dreamz.simple2fa.conversation.CodePrompt
+import io.dreamz.simple2fa.events.PlayerAuthenticatedEvent
 import io.dreamz.simple2fa.map.QRCodeMapRenderer
 import io.dreamz.simple2fa.session.player.Sessions
+import io.dreamz.simple2fa.settings.OtpSettings
+import io.dreamz.simple2fa.storage.AsyncStorageEngine
 import io.dreamz.simple2fa.utils.KeyGenerator
 import io.dreamz.simple2fa.utils.OTPAuthUri
 import io.dreamz.simple2fa.utils.QRCodeGenerator
@@ -46,10 +49,29 @@ object JoinListener : Listener {
                     .withInitialSessionData(mapOf(Pair("uuid", event.player.uniqueId)))
                     .buildConversation(event.player).begin()
 
-            if (!Simple2FA.instance.storageEngine.hasSecret(event.player.uniqueId)) {
-                this.giveMap(event.player)
+            if (Simple2FA.instance.storageEngine is AsyncStorageEngine) {
+                val future = (Simple2FA.instance.storageEngine as AsyncStorageEngine)
+                        .hasSecretAsync(event.player.uniqueId)
+
+                future.whenComplete { t, _ ->
+                    if (!t) {
+                        this.giveMap(event.player)
+                    }
+                }
+
+            } else {
+                if (!Simple2FA.instance.storageEngine.hasSecret(event.player.uniqueId)) {
+                    this.giveMap(event.player)
+                }
             }
         }
+    }
+
+    @EventHandler
+    fun onPlayerAuthenticated(event: PlayerAuthenticatedEvent) {
+
+        event.player.inventory.contents = event.session.inventorySnapshot
+
     }
 
     private fun giveMap(player: Player) {
@@ -71,7 +93,8 @@ object JoinListener : Listener {
         return QRCodeGenerator.generate(
                 OTPAuthUri("totp", player.name, mapOf(
                         Pair("secret", sharedSecret),
-                        Pair("issuer", Simple2FA.instance.issuer)
+                        Pair("issuer", OtpSettings.issuer),
+                        Pair("digits", OtpSettings.digits)
                 )).toString(), 128, 128)
 
     }

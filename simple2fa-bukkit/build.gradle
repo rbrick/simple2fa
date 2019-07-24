@@ -36,7 +36,8 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     compile 'com.google.zxing:core:3.3.0'
     compile 'com.google.zxing:javase:3.3.0'
-
+    compile 'org.mongodb:mongodb-driver-reactivestreams:1.10.0'
+    
     // compile against latest, but keep backwards compatibility by only using
     // Bukkit features from 1.7
     compileOnly 'org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT'
@@ -48,17 +49,21 @@ dependencies {
 // Create an UBER jar which includes the kotlin stdlib and ZXing code
 shadowJar {
     dependencies {
+        
+        include dependency('org.jetbrains.kotlin:kotlin-stdlib')
+        include dependency('org.jetbrains.kotlin:kotlin-stdlib-common')
+        include dependency('org.jetbrains.kotlin:kotlin-stdlib-jdk8')
         include dependency('com.google.zxing:core:3.3.0')
         include dependency('com.google.zxing:javase:3.3.0')
+        include dependency('org.mongodb:mongodb-driver-reactivestreams:1.10.0')
+        include dependency('org.mongodb:mongodb-driver-core:3.9.0')
+        include dependency('org.mongodb:mongodb-driver-async:3.9.0')
+        include dependency('org.mongodb:bson')
+        include dependency('org.reactivestreams:reactive-streams:1.0.2')
     }
-}
 
-jar {
-    manifest {
-        // include the stdlib in our classpath instead to reduce size
-        attributes 'Main-Class': "io.dreamz.simple2fa.Main"
-        attributes 'Class-Path': "../libs/kotlin-stdlib-1.3.0.jar ../libs/kotlin-stdlib-jdk8-1.3.0 ../libs/kotlin-stdlib-common-1.3.0.jar"
-
-    }
+    relocate 'com.mongodb', 'io.dreamz.com.mongodb'
+    relocate 'org.bson', 'io.dreamz.org.bson'
+    relocate 'org.reactivestreams', 'io.dreamz.org.reactivestreams'
 }
 

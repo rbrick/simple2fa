@@ -6,6 +6,9 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 public interface Session {
 
     /**
@@ -25,10 +28,8 @@ public interface Session {
     /**
      * Authenticates a user
      * @param code The code to enter
-     * @return false if authentication failed
      */
-    boolean authenticate(String code);
-
+    void authenticate(String code, Consumer<Boolean> callback);
 
     /**
      * This is a snapshot of the player's location when they join and need to authentication
@@ -49,6 +50,17 @@ public interface Session {
      * @return Their previous inventory
      */
     ItemStack[] getInventorySnapshot();
+
+
+    /**
+     * This is a snapshot of the player's armor when they join in.
+     * <p>
+     * Players will not have access to their armor when they login, on authentication they will
+     * get their armor back.
+     *
+     * @return Their previous inventory
+     */
+    ItemStack[] getArmorSnapshot();
 
     Player getPlayer();
 }

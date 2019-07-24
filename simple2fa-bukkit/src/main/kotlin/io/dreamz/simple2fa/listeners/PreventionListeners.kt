@@ -17,10 +17,10 @@ object PreventionListeners : Listener {
     @EventHandler
     fun move(event: PlayerMoveEvent) {
         val session = Simple2FA.instance.sessions[event.player.uniqueId]
-        if (session?.needsAuthentication()!!) {
+        if (session != null && session.needsAuthentication()) {
             if (event.to.blockX != event.from.blockX ||
                     event.to.blockY != event.from.blockY ||
-                    event.to.blockZ != event.from.blockX) {
+                    event.to.blockZ != event.from.blockZ) {
                 event.isCancelled = true
             }
         }
@@ -29,7 +29,7 @@ object PreventionListeners : Listener {
     @EventHandler
     fun interact(event: PlayerInteractEvent) {
         val session = Simple2FA.instance.sessions[event.player.uniqueId]
-        if (session?.needsAuthentication()!!) {
+        if (session != null && session.needsAuthentication()) {
             event.isCancelled = true
         }
     }
@@ -38,7 +38,7 @@ object PreventionListeners : Listener {
     fun attack(event: EntityDamageByEntityEvent) {
         if (event.damager is Player) {
             val session = Simple2FA.instance.sessions[(event.damager as Player).uniqueId]
-            if (session?.needsAuthentication()!!) {
+            if (session != null && session.needsAuthentication()) {
                 event.isCancelled = true
             }
         }
@@ -48,7 +48,7 @@ object PreventionListeners : Listener {
     fun damaged(event: EntityDamageEvent) {
         if (event.entity is Player) {
             val session = Simple2FA.instance.sessions[(event.entity as Player).uniqueId]
-            if (session?.needsAuthentication()!!) {
+            if (session != null && session.needsAuthentication()) {
                 event.isCancelled = true
             }
         }
@@ -57,7 +57,7 @@ object PreventionListeners : Listener {
     @EventHandler
     fun inventoryClick(event: InventoryClickEvent) {
         val session = Simple2FA.instance.sessions[event.whoClicked.uniqueId]
-        if (session?.needsAuthentication()!!) {
+        if (session != null && session.needsAuthentication()) {
             event.isCancelled = true
         }
     }
@@ -65,7 +65,7 @@ object PreventionListeners : Listener {
     @EventHandler
     fun itemDrop(event: PlayerDropItemEvent) {
         val session = Simple2FA.instance.sessions[event.player.uniqueId]
-        if (session?.needsAuthentication()!!) {
+        if (session != null && session.needsAuthentication()) {
             event.isCancelled = true
         }
     }
@@ -73,7 +73,7 @@ object PreventionListeners : Listener {
     @EventHandler
     fun hunger(event: FoodLevelChangeEvent) {
         val session = Simple2FA.instance.sessions[event.entity.uniqueId]
-        if (session?.needsAuthentication()!!) {
+        if (session != null && session.needsAuthentication()) {
             event.isCancelled = true
         }
     }
@@ -81,7 +81,7 @@ object PreventionListeners : Listener {
     @EventHandler
     fun command(event: PlayerCommandPreprocessEvent) {
         val session = Simple2FA.instance.sessions[event.player.uniqueId]
-        if (session?.needsAuthentication()!!) {
+        if (session != null && session.needsAuthentication()) {
             event.isCancelled = true
         }
     }

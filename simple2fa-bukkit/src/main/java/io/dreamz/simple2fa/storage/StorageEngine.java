@@ -3,6 +3,7 @@ package io.dreamz.simple2fa.storage;
 import io.dreamz.simple2fa.utils.Base32String;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public interface StorageEngine {
     void save();
@@ -14,7 +15,6 @@ public interface StorageEngine {
     void storeSecret(UUID uniqueId, String secret);
 
     String getSecret(UUID uniqueId);
-
 
     default byte[] getRawSecret(UUID uniqueId) {
         try {
