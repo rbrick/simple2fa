@@ -2,7 +2,6 @@ package io.dreamz.simple2fa.storage.impl.mongodb;
 
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
-import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
@@ -10,7 +9,6 @@ import com.mongodb.reactivestreams.client.MongoCollection;
 import com.mongodb.reactivestreams.client.MongoDatabase;
 import io.dreamz.simple2fa.storage.AsyncStorageEngine;
 import org.bson.Document;
-import org.bukkit.Bukkit;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -24,13 +22,12 @@ public final class MongoDBStorageEngine implements AsyncStorageEngine {
     private static final ReplaceOptions UPSERT_OPTION = new ReplaceOptions().upsert(true);
     private Map<UUID, String> cache = new ConcurrentHashMap<>();
 
-    private MongoClient mongoClient;
     private MongoCollection<Document> mongoCollection;
 
     MongoDBStorageEngine(String mongoUri, String database, String collectionName) {
-        this.mongoClient = MongoClients.create(mongoUri);
+        MongoClient mongoClient = MongoClients.create(mongoUri);
 
-        MongoDatabase mongoDatabase = this.mongoClient.getDatabase(database);
+        MongoDatabase mongoDatabase = mongoClient.getDatabase(database);
 
         this.mongoCollection = mongoDatabase.getCollection(collectionName);
     }
@@ -95,7 +92,7 @@ public final class MongoDBStorageEngine implements AsyncStorageEngine {
         return null;
     }
 
-    private class CompletableSubscriber<T> implements Subscriber<T> {
+    private static class CompletableSubscriber<T> implements Subscriber<T> {
         private CompletableFuture<T> future;
         private T result;
 

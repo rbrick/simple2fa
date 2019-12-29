@@ -6,6 +6,7 @@ import io.dreamz.simple2fa.Simple2FA
 import io.dreamz.simple2fa.conversation.CodePrompt
 import io.dreamz.simple2fa.events.PlayerAuthenticatedEvent
 import io.dreamz.simple2fa.map.QRCodeMapRenderer
+import io.dreamz.simple2fa.session.UserSession
 import io.dreamz.simple2fa.session.player.Sessions
 import io.dreamz.simple2fa.settings.OtpSettings
 import io.dreamz.simple2fa.storage.AsyncStorageEngine
@@ -42,6 +43,7 @@ object JoinListener : Listener {
 
             // clear their inventory
             event.player.inventory.clear()
+            event.player.inventory.armorContents = null
             event.player.updateInventory()
 
             // immediately begin asking for the code
@@ -69,9 +71,10 @@ object JoinListener : Listener {
 
     @EventHandler
     fun onPlayerAuthenticated(event: PlayerAuthenticatedEvent) {
-
-        event.player.inventory.contents = event.session.inventorySnapshot
-
+        if (event.session is UserSession) {
+            event.player.inventory.contents = (event.session as UserSession).inventorySnapshot
+            event.player.inventory.armorContents = (event.session as UserSession).armorSnapshot
+        }
     }
 
     private fun giveMap(player: Player) {

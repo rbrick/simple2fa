@@ -10,7 +10,7 @@ import java.util.*
 // TODO: 1.13 has changed plugin messaging names; rename to 'simple2fa:auth'
 
 // The plugin message channel to use
-const val PLUGIN_MESSAGE_CHANNEL = "S2FA|Auth"
+const val PLUGIN_MESSAGE_CHANNEL = "s2fa"
 
 val authenticatedUsers = mutableMapOf<UUID, Boolean>()
 

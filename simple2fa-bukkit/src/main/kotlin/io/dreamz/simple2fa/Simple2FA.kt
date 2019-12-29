@@ -21,6 +21,7 @@ import java.util.*
 
 
 const val PLUGIN_PREFIX = "&6[&aSimple2FA&6]"
+const val PLS_AUTH_MESSAGE = ""
 const val PLUGIN_PERMISSION = "simple2fa.require_auth"
 
 class Simple2FA : JavaPlugin() {

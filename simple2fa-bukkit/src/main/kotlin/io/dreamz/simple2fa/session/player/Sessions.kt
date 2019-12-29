@@ -2,6 +2,7 @@ package io.dreamz.simple2fa.session.player
 
 import io.dreamz.simple2fa.Simple2FA
 import io.dreamz.simple2fa.session.Session
+import io.dreamz.simple2fa.session.UserSession
 import io.dreamz.simple2fa.storage.AsyncStorageEngine
 import io.dreamz.simple2fa.utils.Base32String
 import org.bukkit.Bukkit
@@ -14,13 +15,12 @@ import java.util.function.Consumer
 class PlayerSession(private val uuid: UUID,
                     private val inventory: Array<ItemStack>,
                     private val armor: Array<ItemStack>,
-                    private val location: Location) : Session {
+                    private val location: Location) : UserSession {
 
-    private var needsAuthentication = true
     private var authenticated = false
 
-    override fun needsAuthentication(): Boolean = needsAuthentication
-    override fun isAuthenticated(): Boolean = !needsAuthentication && authenticated
+    override fun needsAuthentication(): Boolean = !authenticated
+    override fun isAuthenticated(): Boolean = authenticated
     override fun getInventorySnapshot(): Array<out ItemStack>? = inventory
     override fun getArmorSnapshot(): Array<out ItemStack>? = armor
     override fun getLocationSnapshot(): Location = location
@@ -31,10 +31,8 @@ class PlayerSession(private val uuid: UUID,
         val sessionKey = Simple2FA.instance.storageEngine.getRawSecret(uuid)
         if (totp.verify(code!!, sessionKey!!, 2)) {
             this.authenticated = true
-            this.needsAuthentication = false
-            return true
         }
-        return false
+        return this.authenticated
     }
 
     override fun authenticate(code: String?, callback: Consumer<Boolean>?) {
@@ -66,11 +64,19 @@ class PlayerSession(private val uuid: UUID,
         val totp = Simple2FA.instance.totp
         if (totp.verify(code, key, 2)) {
             this.authenticated = true
-            this.needsAuthentication = false
-            cb?.accept(true)
-        } else {
-            cb?.accept(false)
         }
+
+        cb?.accept(this.authenticated)
+    }
+}
+
+class RemoteSession(private val authStatus: Boolean) : Session {
+    override fun needsAuthentication(): Boolean {
+        return !authStatus
+    }
+
+    override fun isAuthenticated(): Boolean {
+        return authStatus
     }
 }
 

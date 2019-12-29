@@ -3,6 +3,7 @@ package io.dreamz.simple2fa.conversation;
 import io.dreamz.simple2fa.Simple2FA;
 import io.dreamz.simple2fa.events.PlayerAuthenticatedEvent;
 import io.dreamz.simple2fa.session.Session;
+import io.dreamz.simple2fa.session.UserSession;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.conversations.ConversationContext;
@@ -34,40 +35,43 @@ public final class CodePrompt implements Prompt {
         final UUID id = (UUID) context.getSessionData("uuid");
         final Session session = Simple2FA.getInstance().getSessions().get(id);
 
-        if (context.getAllSessionData().containsKey("attempts") &&
-                context.getAllSessionData().get("attempts") instanceof Integer) {
-            int attempts = (Integer) context.getAllSessionData().get("attempts");
-            if (attempts > 5) {
-                session.getPlayer().kickPlayer(ChatColor.RED + "Too many attempts!");
+        if (session instanceof UserSession) {
+
+            if (context.getAllSessionData().containsKey("attempts") &&
+                    context.getAllSessionData().get("attempts") instanceof Integer) {
+                int attempts = (Integer) context.getAllSessionData().get("attempts");
+                if (attempts >= 5) {
+                    ((UserSession) session).getPlayer().kickPlayer(ChatColor.RED + "Too many attempts!");
+                    return END_OF_CONVERSATION;
+                }
+            }
+
+            if (this.verified.get()) {
+
+                Bukkit.getPluginManager().callEvent(new PlayerAuthenticatedEvent((Player) context.getForWhom(), session));
+
                 return END_OF_CONVERSATION;
             }
+
+            ((UserSession) session).authenticate(input, (verified) -> {
+                if (!verified) {
+                    context.getAllSessionData().putIfAbsent("attempts", 0);
+                    context.getAllSessionData().compute("attempts", (k, v) -> {
+                        if (v instanceof Integer) {
+                            return ((Integer) v) + 1;
+                        }
+                        return -1;
+                    });
+                    // send attempt count
+                    context.getForWhom().sendRawMessage(ChatColor.translateAlternateColorCodes('&',
+                            String.format("&cInvalid code! (Attempts: &e%d&c)",
+                                    (Integer) context.getAllSessionData().get("attempts"))
+                    ));
+                } else {
+                    this.verified.set(true);
+                }
+            });
         }
-
-        if (this.verified.get()) {
-
-            Bukkit.getPluginManager().callEvent(new PlayerAuthenticatedEvent((Player) context.getForWhom(), session));
-
-            return END_OF_CONVERSATION;
-        }
-
-        session.authenticate(input, (verified) -> {
-            if (!verified) {
-                context.getAllSessionData().putIfAbsent("attempts", 0);
-                context.getAllSessionData().compute("attempts", (k, v) -> {
-                    if (v instanceof Integer) {
-                        return ((Integer) v) + 1;
-                    }
-                    return -1;
-                });
-                // send attempt count
-                context.getForWhom().sendRawMessage(ChatColor.translateAlternateColorCodes('&',
-                        String.format("&cInvalid code! (Attempts: &e%d&c)",
-                                (Integer) context.getAllSessionData().get("attempts"))
-                ));
-            } else {
-                this.verified.set(true);
-            }
-        });
 
         return this;
     }
