@@ -7,8 +7,11 @@ import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import com.mongodb.reactivestreams.client.MongoCollection;
 import com.mongodb.reactivestreams.client.MongoDatabase;
+import io.dreamz.simple2fa.session.Session;
+import io.dreamz.simple2fa.session.UserSession;
 import io.dreamz.simple2fa.storage.AsyncStorageEngine;
 import org.bson.Document;
+import org.bukkit.entity.Player;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -89,6 +92,16 @@ public final class MongoDBStorageEngine implements AsyncStorageEngine {
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
+        return null;
+    }
+
+    @Override
+    public void storeSession(String ipAddress, UUID uniqueId, UserSession session) {
+
+    }
+
+    @Override
+    public Session getStoredSession(Player player) {
         return null;
     }
 

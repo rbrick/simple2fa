@@ -1,7 +1,10 @@
 package io.dreamz.simple2fa.storage.impl.flatfile;
 
+import io.dreamz.simple2fa.session.Session;
+import io.dreamz.simple2fa.session.UserSession;
 import io.dreamz.simple2fa.storage.StorageEngine;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,5 +58,20 @@ public final class FlatFileStorageEngine implements StorageEngine {
     @Override
     public String getSecret(UUID uniqueId) {
         return this.yamlConfiguration.getString(uniqueId.toString());
+    }
+
+    @Override
+    public void storeSession(String ipAddress, UUID uniqueId, UserSession session) {
+
+    }
+
+    @Override
+    public Session getStoredSession(Player player) {
+        return null;
+    }
+
+    @Override
+    public boolean hasSecret(UUID uniqueId) {
+        return this.yamlConfiguration.contains(uniqueId.toString());
     }
 }

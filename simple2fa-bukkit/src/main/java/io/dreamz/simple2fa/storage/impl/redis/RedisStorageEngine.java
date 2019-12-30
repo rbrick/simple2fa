@@ -1,8 +1,11 @@
 package io.dreamz.simple2fa.storage.impl.redis;
 
 import io.dreamz.simple2fa.Simple2FA;
+import io.dreamz.simple2fa.session.Session;
+import io.dreamz.simple2fa.session.UserSession;
 import io.dreamz.simple2fa.storage.AsyncStorageEngine;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
@@ -52,6 +55,16 @@ public final class RedisStorageEngine implements AsyncStorageEngine {
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
+        return null;
+    }
+
+    @Override
+    public void storeSession(String ipAddress, UUID uniqueId, UserSession session) {
+
+    }
+
+    @Override
+    public Session getStoredSession(Player player) {
         return null;
     }
 }
