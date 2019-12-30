@@ -37,6 +37,7 @@ dependencies {
     compile 'com.google.zxing:core:3.3.0'
     compile 'com.google.zxing:javase:3.3.0'
     compile 'org.mongodb:mongodb-driver-reactivestreams:1.10.0'
+    compile 'redis.clients:jedis:3.2.0'
     
     // compile against latest, but keep backwards compatibility by only using
     // Bukkit features from 1.7
@@ -60,10 +61,12 @@ shadowJar {
         include dependency('org.mongodb:mongodb-driver-async:3.9.0')
         include dependency('org.mongodb:bson')
         include dependency('org.reactivestreams:reactive-streams:1.0.2')
+        include dependency('redis.clients:jedis:3.2.0')
     }
 
     relocate 'com.mongodb', 'io.dreamz.com.mongodb'
     relocate 'org.bson', 'io.dreamz.org.bson'
     relocate 'org.reactivestreams', 'io.dreamz.org.reactivestreams'
+    relocate 'redis.clients', 'io.dreamz.redis.clients'
 }
 

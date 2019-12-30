@@ -4,10 +4,7 @@ import io.dreamz.simple2fa.listeners.JoinListener
 import io.dreamz.simple2fa.listeners.LeaveListener
 import io.dreamz.simple2fa.listeners.PreventionListeners
 import io.dreamz.simple2fa.session.Session
-import io.dreamz.simple2fa.settings.FlatfileSettings
-import io.dreamz.simple2fa.settings.MongoSettings
-import io.dreamz.simple2fa.settings.OtpSettings
-import io.dreamz.simple2fa.settings.StorageSettings
+import io.dreamz.simple2fa.settings.*
 import io.dreamz.simple2fa.storage.StorageEngine
 import io.dreamz.simple2fa.storage.StorageEngineBuilder
 import io.dreamz.simple2fa.utils.HOTP
@@ -21,7 +18,7 @@ import java.util.*
 
 
 const val PLUGIN_PREFIX = "&6[&aSimple2FA&6]"
-const val PLS_AUTH_MESSAGE = ""
+const val PLS_AUTH_MESSAGE = "&cPlease enter your 2FA code."
 const val PLUGIN_PERMISSION = "simple2fa.require_auth"
 
 class Simple2FA : JavaPlugin() {
@@ -50,6 +47,7 @@ class Simple2FA : JavaPlugin() {
                     .withDatabase(MongoSettings.database)
                     .withCollection(MongoSettings.collection)
                     .create()
+            StorageSettings.engine == "redis" -> StorageEngineBuilder().redis().withUri( RedisSettings.uri  ).create()
             else -> StorageEngineBuilder().flatfile(File(FlatfileSettings.location)).create()
         }
 
@@ -60,7 +58,11 @@ class Simple2FA : JavaPlugin() {
     }
 
     override fun onDisable() {
-        storageEngine.save()
+        try {
+            storageEngine.save()
+        } catch (ignored: Exception) {
+
+        }
     }
 }
 

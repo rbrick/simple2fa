@@ -10,8 +10,8 @@ class Property<A>(val path: () -> String) : ReadOnlyProperty<Any, A> {
 }
 
 object OtpSettings {
-    val issuer by Property<String> { "otp_settings.issuer"  }
-    val digits by Property<Int> { "otp_settings.digits"  }
+    val issuer by Property<String> { "otp_settings.issuer" }
+    val digits by Property<Int> { "otp_settings.digits" }
 }
 
 object MongoSettings {
@@ -21,9 +21,13 @@ object MongoSettings {
 }
 
 object FlatfileSettings {
-    val location by Property<String> { "storage_settings.flatfile.location"  }
+    val location by Property<String> { "storage_settings.flatfile.location" }
+}
+
+object RedisSettings {
+    val uri by Property<String> { "storage_settings.redis.uri" }
 }
 
 object StorageSettings {
-    val engine by Property<String> { "storage_settings.engine"  }
+    val engine by Property<String> { "storage_settings.engine" }
 }

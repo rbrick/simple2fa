@@ -27,6 +27,8 @@ storage_settings:
     uri: "mongodb://localhost"
     database: "simple2fa"
     collection: "secrets"
+  redis:
+    uri: "redis://localhost:6379"
 otp_settings:
   issuer: "Company Name"
   digits: 6
