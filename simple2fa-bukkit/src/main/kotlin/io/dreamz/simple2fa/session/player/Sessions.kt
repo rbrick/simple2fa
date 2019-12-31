@@ -12,12 +12,16 @@ import org.bukkit.inventory.ItemStack
 import java.util.*
 import java.util.function.Consumer
 
-class PlayerSession(private val uuid: UUID,
-                    private val inventory: Array<ItemStack>,
-                    private val armor: Array<ItemStack>,
-                    private val location: Location) : UserSession {
+open class PlayerSession(private val uuid: UUID,
+                         private val inventory: Array<ItemStack>,
+                         private val armor: Array<ItemStack>,
+                         private val location: Location) : UserSession {
 
-    private var authenticated = false
+    var authenticated = false
+    var expireAt = -1L
+
+    override fun expireAt(): Long = expireAt
+    override fun isExpired(): Boolean = if (authenticated) System.currentTimeMillis() >= expireAt else false;
 
     override fun needsAuthentication(): Boolean = !authenticated
     override fun isAuthenticated(): Boolean = authenticated
@@ -27,12 +31,7 @@ class PlayerSession(private val uuid: UUID,
     override fun getPlayer(): Player = Bukkit.getPlayer(uuid)
 
     fun authenticate(code: String?): Boolean {
-        val totp = Simple2FA.instance.totp
-        val sessionKey = Simple2FA.instance.storageEngine.getRawSecret(uuid)
-        if (totp.verify(code!!, sessionKey!!, 2)) {
-            this.authenticated = true
-        }
-        return this.authenticated
+        return this.verify(Simple2FA.instance.storageEngine.getRawSecret(uuid), code!!, null)
     }
 
     override fun authenticate(code: String?, callback: Consumer<Boolean>?) {
@@ -60,13 +59,15 @@ class PlayerSession(private val uuid: UUID,
         }
     }
 
-    private fun verify(key: ByteArray, code: String, cb: Consumer<Boolean>?) {
+
+    private fun verify(key: ByteArray, code: String, cb: Consumer<Boolean>?): Boolean {
         val totp = Simple2FA.instance.totp
         if (totp.verify(code, key, 2)) {
             this.authenticated = true
+            this.expireAt = System.currentTimeMillis()
         }
-
         cb?.accept(this.authenticated)
+        return this.authenticated
     }
 }
 
@@ -83,4 +84,12 @@ class RemoteSession(private val authStatus: Boolean) : Session {
 object Sessions {
     @JvmStatic
     fun ofPlayer(player: Player) = PlayerSession(player.uniqueId, player.inventory.contents.clone(), player.inventory.armorContents.clone(), player.location.clone())
+
+    @JvmStatic
+    fun ofPlayerWithInfo(player: Player, expireAt: Long, authenticated: Boolean): Session {
+        val session = ofPlayer(player)
+        session.expireAt = expireAt
+        session.authenticated = authenticated;
+        return session
+    }
 }

@@ -2,7 +2,10 @@ package io.dreamz.simple2fa.storage.impl.flatfile;
 
 import io.dreamz.simple2fa.session.Session;
 import io.dreamz.simple2fa.session.UserSession;
+import io.dreamz.simple2fa.session.player.Sessions;
 import io.dreamz.simple2fa.storage.StorageEngine;
+import io.dreamz.simple2fa.utils.Hashing;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
@@ -55,6 +58,7 @@ public final class FlatFileStorageEngine implements StorageEngine {
     public void storeSecret(UUID uniqueId, String secret) {
         this.yamlConfiguration.set(uniqueId.toString(), secret);
     }
+
     @Override
     public String getSecret(UUID uniqueId) {
         return this.yamlConfiguration.getString(uniqueId.toString());
@@ -62,11 +66,22 @@ public final class FlatFileStorageEngine implements StorageEngine {
 
     @Override
     public void storeSession(String ipAddress, UUID uniqueId, UserSession session) {
+        String sessionId = Hashing.hash("SHA-256", (ipAddress + ":" + uniqueId.toString()).getBytes());
 
+        ConfigurationSection section = this.yamlConfiguration.createSection("sessions." + sessionId);
+
+        section.set("authenticated", session.isAuthenticated());
+        section.set("expireAt", session.expireAt());
     }
 
     @Override
     public Session getStoredSession(Player player) {
+        String sessionId = Hashing.hash("SHA-256", (player.spigot().getRawAddress() + ":" + player.getUniqueId().toString()).getBytes());
+
+        ConfigurationSection section = this.yamlConfiguration.getConfigurationSection("sessions." + sessionId);
+        if (section != null) {
+            return Sessions.ofPlayerWithInfo(player, section.getLong("expireAt"), section.getBoolean("authenticated"));
+        }
         return null;
     }
 

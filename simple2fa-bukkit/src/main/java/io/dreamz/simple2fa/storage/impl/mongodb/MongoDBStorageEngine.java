@@ -9,7 +9,9 @@ import com.mongodb.reactivestreams.client.MongoCollection;
 import com.mongodb.reactivestreams.client.MongoDatabase;
 import io.dreamz.simple2fa.session.Session;
 import io.dreamz.simple2fa.session.UserSession;
+import io.dreamz.simple2fa.session.player.Sessions;
 import io.dreamz.simple2fa.storage.AsyncStorageEngine;
+import io.dreamz.simple2fa.utils.Hashing;
 import org.bson.Document;
 import org.bukkit.entity.Player;
 import org.reactivestreams.Subscriber;
@@ -23,7 +25,9 @@ import java.util.concurrent.ExecutionException;
 
 public final class MongoDBStorageEngine implements AsyncStorageEngine {
     private static final ReplaceOptions UPSERT_OPTION = new ReplaceOptions().upsert(true);
-    private Map<UUID, String> cache = new ConcurrentHashMap<>();
+
+    private Map<UUID, String> secretCache = new ConcurrentHashMap<>();
+
 
     private MongoCollection<Document> mongoCollection;
 
@@ -47,13 +51,13 @@ public final class MongoDBStorageEngine implements AsyncStorageEngine {
 
         this.mongoCollection
                 .replaceOne(Filters.eq("uniqueId", uniqueId.toString()), insertMe, UPSERT_OPTION).subscribe(new CompletableSubscriber<>(lol));
-        this.cache.put(uniqueId, secret);
+        this.secretCache.put(uniqueId, secret);
     }
 
     @Override
     public CompletableFuture<String> getSecretAsync(UUID uniqueId) {
-        if (this.cache.containsKey(uniqueId)) {
-            return CompletableFuture.completedFuture(this.cache.get(uniqueId));
+        if (this.secretCache.containsKey(uniqueId)) {
+            return CompletableFuture.completedFuture(this.secretCache.get(uniqueId));
         }
 
         CompletableFuture<Document> completableFuture = new CompletableFuture<>();
@@ -66,14 +70,14 @@ public final class MongoDBStorageEngine implements AsyncStorageEngine {
             if (exception != null) {
                 exception.printStackTrace();
             } else {
-                this.cache.put(uniqueId, result.getString("secret"));
+                this.secretCache.put(uniqueId, result.getString("secret"));
             }
         }).thenApply((document -> document.getString("secret")));
     }
 
     @Override
     public CompletableFuture<Boolean> hasSecretAsync(UUID uniqueId) {
-        if (!this.cache.containsKey(uniqueId)) {
+        if (!this.secretCache.containsKey(uniqueId)) {
             CompletableFuture<Long> completableFuture = new CompletableFuture<>();
             CompletableSubscriber<Long> completableSubscriber = new CompletableSubscriber<>(completableFuture);
 
@@ -83,6 +87,7 @@ public final class MongoDBStorageEngine implements AsyncStorageEngine {
         }
         return CompletableFuture.completedFuture(true);
     }
+
 
     @Override
     public String getSecret(UUID uniqueId) {
@@ -97,13 +102,40 @@ public final class MongoDBStorageEngine implements AsyncStorageEngine {
 
     @Override
     public void storeSession(String ipAddress, UUID uniqueId, UserSession session) {
+        String sessionId = Hashing.hash("SHA-256", (ipAddress + ":" + uniqueId.toString()).getBytes());
+        Document insertMe = new Document("sessionId", sessionId)
+                .append("expireAt", session.expireAt())
+                .append("authenticated", session.isAuthenticated());
+        CompletableFuture<UpdateResult> lol = new CompletableFuture<>();
 
+        this.mongoCollection.replaceOne(Filters.eq("sessionId", sessionId), insertMe, UPSERT_OPTION).subscribe(new CompletableSubscriber<>(lol));
     }
 
     @Override
     public Session getStoredSession(Player player) {
+        try {
+            return this.getStoredSessionAsync(player).get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
         return null;
     }
+
+    @Override
+    public CompletableFuture<Session> getStoredSessionAsync(Player player) {
+        String sessionId = Hashing.hash("SHA-256", (player.spigot().getRawAddress().getHostName() + ":" + player.getUniqueId().toString()).getBytes());
+
+        CompletableFuture<Document> completableFuture = new CompletableFuture<>();
+        this.mongoCollection.find(Filters.eq("sessionId", sessionId)).first().subscribe(new CompletableSubscriber<>(completableFuture));
+
+        return completableFuture.thenApply((document -> {
+            if (document != null) {
+                return Sessions.ofPlayerWithInfo(player, document.getLong("expireAt"), document.getBoolean("authenticated", false));
+            }
+            return null;
+        }));
+    }
+
 
     private static class CompletableSubscriber<T> implements Subscriber<T> {
         private CompletableFuture<T> future;

@@ -36,44 +36,75 @@ object JoinListener : Listener {
     fun onJoin(event: PlayerJoinEvent) {
         // the player needs to authenticate before hand.
         if (event.player.hasPermission(PLUGIN_PERMISSION)) {
-            val session = Sessions.ofPlayer(event.player)
-
-            // store the session
-            Simple2FA.instance.sessions[event.player.uniqueId] = session
-
-            // clear their inventory
-            event.player.inventory.clear()
-            event.player.inventory.armorContents = null
-            event.player.updateInventory()
-
-            // immediately begin asking for the code
-            factory.withFirstPrompt(CodePrompt())
-                    .withInitialSessionData(mapOf(Pair("uuid", event.player.uniqueId)))
-                    .buildConversation(event.player).begin()
-
             if (Simple2FA.instance.storageEngine is AsyncStorageEngine) {
-                val future = (Simple2FA.instance.storageEngine as AsyncStorageEngine)
-                        .hasSecretAsync(event.player.uniqueId)
-
-                future.whenComplete { t, _ ->
-                    if (!t) {
-                        this.giveMap(event.player)
+                val fut = (Simple2FA.instance.storageEngine as AsyncStorageEngine).getStoredSessionAsync(event.player)
+                fut.whenComplete { session, throwable ->
+                    if (throwable != null) {
+                        throwable.printStackTrace()
+                    } else {
+                        if (session != null && session is UserSession) {
+                            if (session.isExpired || !session.isAuthenticated) {
+                                this.newPlayerSession(event.player)
+                            } else {
+                                Simple2FA.instance.sessions[event.player.uniqueId] = session
+                            }
+                        }
                     }
                 }
-
             } else {
-                if (!Simple2FA.instance.storageEngine.hasSecret(event.player.uniqueId)) {
-                    this.giveMap(event.player)
+                val session = Simple2FA.instance.storageEngine.getStoredSession(event.player)
+                if (session != null && session is UserSession) {
+                    if (session.isExpired || !session.isAuthenticated) {
+                        this.newPlayerSession(event.player)
+                    } else {
+                        Simple2FA.instance.sessions[event.player.uniqueId] = session
+                    }
                 }
             }
         }
     }
+
 
     @EventHandler
     fun onPlayerAuthenticated(event: PlayerAuthenticatedEvent) {
         if (event.session is UserSession) {
             event.player.inventory.contents = (event.session as UserSession).inventorySnapshot
             event.player.inventory.armorContents = (event.session as UserSession).armorSnapshot
+
+            Simple2FA.instance.storageEngine.storeSession(event.player.spigot().rawAddress.hostName, event.player.uniqueId, event.session as UserSession)
+        }
+    }
+
+    private fun newPlayerSession(player: Player) {
+        val session = Sessions.ofPlayer(player)
+
+        // store the session
+        Simple2FA.instance.sessions[player.uniqueId] = session
+
+        // clear their inventory
+        player.inventory.clear()
+        player.inventory.armorContents = null
+        player.updateInventory()
+
+        // immediately begin asking for the code
+        factory.withFirstPrompt(CodePrompt())
+                .withInitialSessionData(mapOf(Pair("uuid", player.uniqueId)))
+                .buildConversation(player).begin()
+
+        if (Simple2FA.instance.storageEngine is AsyncStorageEngine) {
+            val future = (Simple2FA.instance.storageEngine as AsyncStorageEngine)
+                    .hasSecretAsync(player.uniqueId)
+
+            future.whenComplete { t, _ ->
+                if (!t) {
+                    this.giveMap(player)
+                }
+            }
+
+        } else {
+            if (!Simple2FA.instance.storageEngine.hasSecret(player.uniqueId)) {
+                this.giveMap(player)
+            }
         }
     }
 

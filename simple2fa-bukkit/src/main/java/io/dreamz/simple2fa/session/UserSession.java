@@ -6,7 +6,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.function.Consumer;
 
-public interface UserSession extends Session {
+public interface UserSession extends ExpirableSession {
 
     /**
      * Authenticates a user
