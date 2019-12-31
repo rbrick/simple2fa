@@ -66,7 +66,7 @@ open class PlayerSession(private val uuid: UUID,
         val totp = Simple2FA.instance.totp
         if (totp.verify(code, key, 2)) {
             this.authenticated = true
-            this.expireAt = System.currentTimeMillis() + (Time.parseDuration(SessionSettings.expireAfter));
+            this.expireAt = System.currentTimeMillis() + (Time.parseDuration(SessionSettings.expireAfter))
         }
         cb?.accept(this.authenticated)
         return this.authenticated
