@@ -3,8 +3,10 @@ package io.dreamz.simple2fa.session.player
 import io.dreamz.simple2fa.Simple2FA
 import io.dreamz.simple2fa.session.Session
 import io.dreamz.simple2fa.session.UserSession
+import io.dreamz.simple2fa.settings.SessionSettings
 import io.dreamz.simple2fa.storage.AsyncStorageEngine
 import io.dreamz.simple2fa.utils.Base32String
+import io.dreamz.simple2fa.utils.Time
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Player
@@ -64,7 +66,7 @@ open class PlayerSession(private val uuid: UUID,
         val totp = Simple2FA.instance.totp
         if (totp.verify(code, key, 2)) {
             this.authenticated = true
-            this.expireAt = System.currentTimeMillis()
+            this.expireAt = System.currentTimeMillis() + (Time.parseDuration(SessionSettings.expireAfter));
         }
         cb?.accept(this.authenticated)
         return this.authenticated

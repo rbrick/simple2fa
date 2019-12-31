@@ -29,6 +29,8 @@ storage_settings:
     collection: "secrets"
   redis:
     uri: "redis://localhost:6379"
+session_settings:
+  expire_after: "30d"
 otp_settings:
   issuer: "Company Name"
   digits: 6

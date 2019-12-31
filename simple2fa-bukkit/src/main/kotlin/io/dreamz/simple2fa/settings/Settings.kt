@@ -31,3 +31,7 @@ object RedisSettings {
 object StorageSettings {
     val engine by Property<String> { "storage_settings.engine" }
 }
+
+object SessionSettings {
+    val expireAfter by Property<String> { "session_settings.expire_after" }
+}
