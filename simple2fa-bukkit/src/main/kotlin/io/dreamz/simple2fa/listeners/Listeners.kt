@@ -48,6 +48,8 @@ object JoinListener : Listener {
                             } else {
                                 Simple2FA.instance.sessions[event.player.uniqueId] = session
                             }
+                        } else {
+                            this.newPlayerSession(event.player)
                         }
                     }
                 }
@@ -59,6 +61,8 @@ object JoinListener : Listener {
                     } else {
                         Simple2FA.instance.sessions[event.player.uniqueId] = session
                     }
+                } else {
+                    this.newPlayerSession(event.player)
                 }
             }
         }
