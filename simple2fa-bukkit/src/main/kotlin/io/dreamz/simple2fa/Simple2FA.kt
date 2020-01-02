@@ -19,12 +19,13 @@ import java.util.*
 
 const val PLUGIN_PREFIX = "&6[&aSimple2FA&6]"
 const val PLS_AUTH_MESSAGE = "&cPlease enter your 2FA code."
-const val PLUGIN_PERMISSION = "simple2fa.require_auth"
+const val PLUGIN_PERMISSION = "simple2fa.require.auth"
 
 class Simple2FA : JavaPlugin() {
 
     val random = Random(System.nanoTime())
     val sessions = mutableMapOf<UUID, Session>()
+    val keyCache = mutableMapOf<UUID, String>()
 
     lateinit var storageEngine: StorageEngine
     lateinit var totp: HOTP
@@ -47,7 +48,7 @@ class Simple2FA : JavaPlugin() {
                     .withDatabase(MongoSettings.database)
                     .withCollection(MongoSettings.collection)
                     .create()
-            StorageSettings.engine == "redis" -> StorageEngineBuilder().redis().withUri( RedisSettings.uri  ).create()
+            StorageSettings.engine == "redis" -> StorageEngineBuilder().redis().withUri(RedisSettings.uri).create()
             else -> StorageEngineBuilder().flatfile(File(FlatfileSettings.location)).create()
         }
 

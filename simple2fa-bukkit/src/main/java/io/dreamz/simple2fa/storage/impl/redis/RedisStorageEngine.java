@@ -13,16 +13,13 @@ import redis.clients.jedis.JedisPool;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 public final class RedisStorageEngine implements AsyncStorageEngine {
-
     private final JedisPool jedisPool;
-    private Map<UUID, String> secretCache = new ConcurrentHashMap<>();
-
 
     public RedisStorageEngine(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
@@ -30,7 +27,7 @@ public final class RedisStorageEngine implements AsyncStorageEngine {
 
     @Override
     public CompletableFuture<String> getSecretAsync(UUID uniqueId) {
-        return CompletableFuture.supplyAsync(() -> secretCache.computeIfAbsent((uniqueId), uuid -> {
+        return CompletableFuture.supplyAsync(() -> Simple2FA.getInstance().getKeyCache().computeIfAbsent((uniqueId), uuid -> {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.get("s2fa:secrets:" + uuid.toString());
             }
@@ -39,11 +36,7 @@ public final class RedisStorageEngine implements AsyncStorageEngine {
 
     @Override
     public CompletableFuture<Boolean> hasSecretAsync(UUID uniqueId) {
-        return CompletableFuture.supplyAsync(() -> {
-            try (Jedis jedis = jedisPool.getResource()) {
-                return jedis.exists("s2fa:secrets:" + uniqueId.toString());
-            }
-        });
+        return this.getSecretAsync(uniqueId).thenApply(Objects::nonNull);
     }
 
     @Override
@@ -56,6 +49,7 @@ public final class RedisStorageEngine implements AsyncStorageEngine {
         Bukkit.getScheduler().runTaskAsynchronously(Simple2FA.getInstance(), () -> {
             try (Jedis jedis = jedisPool.getResource()) {
                 jedis.set("s2fa:secrets:" + uniqueId.toString(), secret);
+                Simple2FA.getInstance().getKeyCache().put(uniqueId, secret);
             }
         });
     }
@@ -75,6 +69,8 @@ public final class RedisStorageEngine implements AsyncStorageEngine {
         Bukkit.getScheduler().runTaskAsynchronously(Simple2FA.getInstance(), () -> {
             try (Jedis jedis = jedisPool.getResource()) {
                 String hashed = Hashing.hash("SHA-256", (ipAddress + ":" + uniqueId.toString()).getBytes());
+
+
                 Map<String, String> map = new HashMap<>();
                 {
                     map.put("authenticated", String.valueOf(session.isAuthenticated()));
@@ -89,7 +85,7 @@ public final class RedisStorageEngine implements AsyncStorageEngine {
     @Override
     public Session getStoredSession(Player player) {
         try (Jedis jedis = jedisPool.getResource()) {
-            String hashed = Hashing.hash("SHA-256", (player.spigot().getRawAddress().getHostName() + ":" + player.getUniqueId().toString()).getBytes());
+            String hashed = Hashing.hash("SHA-256", (player.getAddress().getAddress().getHostAddress() + ":" + player.getUniqueId().toString()).getBytes());
 
             if (jedis.exists("s2fa:sessions:" + hashed)) {
                 Map<String, String> data = jedis.hgetAll("s2fa:sessions:" + hashed);

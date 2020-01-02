@@ -11,15 +11,12 @@ import org.bukkit.conversations.Prompt;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class CodePrompt implements Prompt {
 
-    private AtomicBoolean verified = new AtomicBoolean(false);
-
     @Override
     public String getPromptText(ConversationContext context) {
-        if (verified.get()) {
+        if (context.getAllSessionData().containsKey("verified")) {
             return ChatColor.GREEN + "Successfully authenticated.";
         }
         return ChatColor.RED + "Please enter your 2FA code.";
@@ -27,15 +24,22 @@ public final class CodePrompt implements Prompt {
 
     @Override
     public boolean blocksForInput(ConversationContext context) {
-        return !verified.get();
+        return !context.getAllSessionData().containsKey("verified");
     }
 
     @Override
     public Prompt acceptInput(ConversationContext context, String input) {
         final UUID id = (UUID) context.getSessionData("uuid");
         final Session session = Simple2FA.getInstance().getSessions().get(id);
-
+        final String key = Simple2FA.getInstance().getKeyCache().get(id);
         if (session instanceof UserSession) {
+            if (key == null) {
+                context.getForWhom().sendRawMessage(ChatColor.RED + "Please wait while we load your session...");
+                return this;
+            }
+            if (context.getAllSessionData().containsKey("verified")) {
+                return END_OF_CONVERSATION;
+            }
 
             if (context.getAllSessionData().containsKey("attempts") &&
                     context.getAllSessionData().get("attempts") instanceof Integer) {
@@ -46,34 +50,26 @@ public final class CodePrompt implements Prompt {
                 }
             }
 
-            if (this.verified.get()) {
 
+            if (!((UserSession) session).authenticate(key, input)) {
+                context.getAllSessionData().compute("attempts", (k, v) -> {
+                    if (v instanceof Integer) {
+                        return ((Integer) v) + 1;
+                    }
+                    return 1;
+                });
+                // send attempt count
+                context.getForWhom().sendRawMessage(ChatColor.translateAlternateColorCodes('&',
+                        String.format("&cInvalid code! (Attempts: &e%d&c)", (Integer) context.getAllSessionData().get("attempts"))
+                ));
+            } else {
+                context.getAllSessionData().put("verified", true);
                 Bukkit.getPluginManager().callEvent(new PlayerAuthenticatedEvent((Player) context.getForWhom(), session));
-
-                return END_OF_CONVERSATION;
             }
 
-            ((UserSession) session).authenticate(input, (verified) -> {
-                if (!verified) {
-                    context.getAllSessionData().putIfAbsent("attempts", 0);
-                    context.getAllSessionData().compute("attempts", (k, v) -> {
-                        if (v instanceof Integer) {
-                            return ((Integer) v) + 1;
-                        }
-                        return -1;
-                    });
-                    // send attempt count
-                    context.getForWhom().sendRawMessage(ChatColor.translateAlternateColorCodes('&',
-                            String.format("&cInvalid code! (Attempts: &e%d&c)",
-                                    (Integer) context.getAllSessionData().get("attempts"))
-                    ));
-                } else {
-                    this.verified.set(true);
-                }
-            });
+            return this;
         }
 
-        return this;
+        return END_OF_CONVERSATION;
     }
-
 }

@@ -10,9 +10,10 @@ public interface UserSession extends ExpirableSession {
 
     /**
      * Authenticates a user
+     *
      * @param code The code to enter
      */
-    void authenticate(String code, Consumer<Boolean> callback);
+    boolean authenticate(String key, String code);
 
     /**
      * This is a snapshot of the player's location when they join and need to authentication
@@ -46,7 +47,6 @@ public interface UserSession extends ExpirableSession {
     ItemStack[] getArmorSnapshot();
 
     /**
-     *
      * @return
      */
     Player getPlayer();

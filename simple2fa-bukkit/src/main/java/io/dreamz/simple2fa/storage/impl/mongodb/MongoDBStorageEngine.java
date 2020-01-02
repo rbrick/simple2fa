@@ -7,6 +7,7 @@ import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import com.mongodb.reactivestreams.client.MongoCollection;
 import com.mongodb.reactivestreams.client.MongoDatabase;
+import io.dreamz.simple2fa.Simple2FA;
 import io.dreamz.simple2fa.session.Session;
 import io.dreamz.simple2fa.session.UserSession;
 import io.dreamz.simple2fa.session.player.Sessions;
@@ -25,9 +26,6 @@ import java.util.concurrent.ExecutionException;
 
 public final class MongoDBStorageEngine implements AsyncStorageEngine {
     private static final ReplaceOptions UPSERT_OPTION = new ReplaceOptions().upsert(true);
-
-    private Map<UUID, String> secretCache = new ConcurrentHashMap<>();
-
 
     private MongoCollection<Document> mongoCollection;
 
@@ -51,13 +49,13 @@ public final class MongoDBStorageEngine implements AsyncStorageEngine {
 
         this.mongoCollection
                 .replaceOne(Filters.eq("uniqueId", uniqueId.toString()), insertMe, UPSERT_OPTION).subscribe(new CompletableSubscriber<>(lol));
-        this.secretCache.put(uniqueId, secret);
+        Simple2FA.getInstance().getKeyCache().put(uniqueId, secret);
     }
 
     @Override
     public CompletableFuture<String> getSecretAsync(UUID uniqueId) {
-        if (this.secretCache.containsKey(uniqueId)) {
-            return CompletableFuture.completedFuture(this.secretCache.get(uniqueId));
+        if ( Simple2FA.getInstance().getKeyCache().containsKey(uniqueId)) {
+            return CompletableFuture.completedFuture( Simple2FA.getInstance().getKeyCache().get(uniqueId));
         }
 
         CompletableFuture<Document> completableFuture = new CompletableFuture<>();
@@ -70,14 +68,14 @@ public final class MongoDBStorageEngine implements AsyncStorageEngine {
             if (exception != null) {
                 exception.printStackTrace();
             } else {
-                this.secretCache.put(uniqueId, result.getString("secret"));
+                Simple2FA.getInstance().getKeyCache().put(uniqueId, result.getString("secret"));
             }
         }).thenApply((document -> document.getString("secret")));
     }
 
     @Override
     public CompletableFuture<Boolean> hasSecretAsync(UUID uniqueId) {
-        if (!this.secretCache.containsKey(uniqueId)) {
+        if (! Simple2FA.getInstance().getKeyCache().containsKey(uniqueId)) {
             CompletableFuture<Long> completableFuture = new CompletableFuture<>();
             CompletableSubscriber<Long> completableSubscriber = new CompletableSubscriber<>(completableFuture);
 
@@ -123,7 +121,7 @@ public final class MongoDBStorageEngine implements AsyncStorageEngine {
 
     @Override
     public CompletableFuture<Session> getStoredSessionAsync(Player player) {
-        String sessionId = Hashing.hash("SHA-256", (player.spigot().getRawAddress().getHostName() + ":" + player.getUniqueId().toString()).getBytes());
+        String sessionId = Hashing.hash("SHA-256", (player.getAddress().getAddress().getHostAddress() + ":" + player.getUniqueId().toString()).getBytes());
 
         CompletableFuture<Document> completableFuture = new CompletableFuture<>();
         this.mongoCollection.find(Filters.eq("sessionId", sessionId)).first().subscribe(new CompletableSubscriber<>(completableFuture));

@@ -62,11 +62,13 @@ shadowJar {
         include dependency('org.mongodb:bson')
         include dependency('org.reactivestreams:reactive-streams:1.0.2')
         include dependency('redis.clients:jedis:3.2.0')
+        include dependency('org.slf4j:slf4j-api:1.7.25')
     }
 
     relocate 'com.mongodb', 'io.dreamz.com.mongodb'
     relocate 'org.bson', 'io.dreamz.org.bson'
     relocate 'org.reactivestreams', 'io.dreamz.org.reactivestreams'
     relocate 'redis.clients', 'io.dreamz.redis.clients'
+    relocate 'org.slf4j', 'io.dreamz.org.slf4j'
 }
 

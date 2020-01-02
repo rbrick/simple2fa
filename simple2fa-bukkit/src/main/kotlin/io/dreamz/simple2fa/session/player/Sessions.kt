@@ -32,43 +32,16 @@ open class PlayerSession(private val uuid: UUID,
     override fun getLocationSnapshot(): Location = location
     override fun getPlayer(): Player = Bukkit.getPlayer(uuid)
 
-    fun authenticate(code: String?): Boolean {
-        return this.verify(Simple2FA.instance.storageEngine.getRawSecret(uuid), code!!, null)
+    override fun authenticate(key: String, code: String?): Boolean {
+        return this.verify(Base32String.decode(key), code!!)
     }
 
-    override fun authenticate(code: String?, callback: Consumer<Boolean>?) {
-        when {
-            (Simple2FA.instance.storageEngine is AsyncStorageEngine) -> {
-                val asyncStore = Simple2FA.instance.storageEngine as AsyncStorageEngine
-                val future = asyncStore.getSecretAsync(uuid)
-
-                if (future.isDone) {
-                    val key = Base32String.decode(future.get())
-                    this.verify(key, code!!, callback)
-                } else {
-                    future.whenComplete { key, error ->
-                        if (error != null) {
-                            error.printStackTrace()
-                        } else {
-                            this.verify(Base32String.decode(key), code!!, callback)
-                        }
-                    }
-                }
-            }
-            else -> {
-                callback?.accept(authenticate(code))
-            }
-        }
-    }
-
-
-    private fun verify(key: ByteArray, code: String, cb: Consumer<Boolean>?): Boolean {
+    private fun verify(key: ByteArray, code: String): Boolean {
         val totp = Simple2FA.instance.totp
         if (totp.verify(code, key, 2)) {
             this.authenticated = true
             this.expireAt = System.currentTimeMillis() + (Time.parseDuration(SessionSettings.expireAfter))
         }
-        cb?.accept(this.authenticated)
         return this.authenticated
     }
 }

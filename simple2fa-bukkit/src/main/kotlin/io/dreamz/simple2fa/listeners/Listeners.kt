@@ -19,6 +19,7 @@ import org.bukkit.Material
 import org.bukkit.conversations.ConversationFactory
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
+import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
@@ -32,40 +33,58 @@ object JoinListener : Listener {
             .withModality(false)
             .withLocalEcho(false)
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     fun onJoin(event: PlayerJoinEvent) {
-        // the player needs to authenticate before hand.
-        if (event.player.hasPermission(PLUGIN_PERMISSION)) {
-            if (Simple2FA.instance.storageEngine is AsyncStorageEngine) {
-                val fut = (Simple2FA.instance.storageEngine as AsyncStorageEngine).getStoredSessionAsync(event.player)
-                fut.whenComplete { session, throwable ->
-                    if (throwable != null) {
-                        throwable.printStackTrace()
-                    } else {
-                        if (session != null && session is UserSession) {
-                            if (session.isExpired || !session.isAuthenticated) {
-                                this.newPlayerSession(event.player)
-                            } else {
-                                Simple2FA.instance.sessions[event.player.uniqueId] = session
-                            }
+        Bukkit.getScheduler().runTaskLater(Simple2FA.instance, {
+
+
+            // the player needs to authenticate before hand.
+            if (event.player.hasPermission(PLUGIN_PERMISSION)) {
+
+                Bukkit.getConsoleSender().sendMessage("Raw Address ${event.player.spigot().rawAddress.hostName}, Address: ${event.player.address.address.hostAddress}")
+                Bukkit.getConsoleSender().sendMessage("${ChatColor.RED}${event.player.name} has permission")
+                if (Simple2FA.instance.storageEngine is AsyncStorageEngine) {
+                    val fut = (Simple2FA.instance.storageEngine as AsyncStorageEngine).getStoredSessionAsync(event.player)
+                    fut.whenComplete { session, throwable ->
+                        if (throwable != null) {
+                            throwable.printStackTrace()
                         } else {
-                            this.newPlayerSession(event.player)
+                            if (session != null && session is UserSession) {
+
+                                Bukkit.getConsoleSender().sendMessage("${ChatColor.RED}${event.player.name} has a session")
+                                if (session.isExpired || !session.isAuthenticated) {
+                                    Bukkit.getScheduler().runTask(Simple2FA.instance) {
+                                        this.newPlayerSession(event.player)
+                                    }
+                                } else {
+                                    Simple2FA.instance.sessions[event.player.uniqueId] = session
+                                }
+                            } else {
+                                Bukkit.getConsoleSender().sendMessage("${ChatColor.RED}${event.player.name} doesn't have a session")
+                                Bukkit.getScheduler().runTask(Simple2FA.instance) {
+                                    this.newPlayerSession(event.player)
+                                }
+                            }
                         }
                     }
-                }
-            } else {
-                val session = Simple2FA.instance.storageEngine.getStoredSession(event.player)
-                if (session != null && session is UserSession) {
-                    if (session.isExpired || !session.isAuthenticated) {
-                        this.newPlayerSession(event.player)
-                    } else {
-                        Simple2FA.instance.sessions[event.player.uniqueId] = session
-                    }
                 } else {
-                    this.newPlayerSession(event.player)
+                    val session = Simple2FA.instance.storageEngine.getStoredSession(event.player)
+                    Bukkit.getConsoleSender().sendMessage("is session null: " + (session != null))
+                    if (session != null && session is UserSession) {
+
+                        Bukkit.getConsoleSender().sendMessage("session expired: " + session.isExpired + ", session auth: " + session.isAuthenticated)
+
+                        if (session.isExpired || !session.isAuthenticated) {
+                            this.newPlayerSession(event.player)
+                        } else {
+                            Simple2FA.instance.sessions[event.player.uniqueId] = session
+                        }
+                    } else {
+                        this.newPlayerSession(event.player)
+                    }
                 }
             }
-        }
+        }, 5L)
     }
 
 
@@ -75,7 +94,7 @@ object JoinListener : Listener {
             event.player.inventory.contents = (event.session as UserSession).inventorySnapshot
             event.player.inventory.armorContents = (event.session as UserSession).armorSnapshot
 
-            Simple2FA.instance.storageEngine.storeSession(event.player.spigot().rawAddress.hostName, event.player.uniqueId, event.session as UserSession)
+            Simple2FA.instance.storageEngine.storeSession(event.player.address.address.hostAddress, event.player.uniqueId, event.session as UserSession)
         }
     }
 
@@ -125,6 +144,8 @@ object JoinListener : Listener {
 
     private fun genQR(player: Player): Image {
         val sharedSecret = KeyGenerator.generate()
+
+
         // store the shared secret
         Simple2FA.instance.storageEngine.storeSecret(player.uniqueId, sharedSecret)
 

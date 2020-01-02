@@ -76,7 +76,7 @@ public final class FlatFileStorageEngine implements StorageEngine {
 
     @Override
     public Session getStoredSession(Player player) {
-        String sessionId = Hashing.hash("SHA-256", (player.spigot().getRawAddress() + ":" + player.getUniqueId().toString()).getBytes());
+        String sessionId = Hashing.hash("SHA-256", (player.getAddress().getAddress().getHostAddress() + ":" + player.getUniqueId().toString()).getBytes());
 
         ConfigurationSection section = this.yamlConfiguration.getConfigurationSection("sessions." + sessionId);
         if (section != null) {
