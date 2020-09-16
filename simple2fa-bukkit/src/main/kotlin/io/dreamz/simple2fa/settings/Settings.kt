@@ -1,6 +1,8 @@
 package io.dreamz.simple2fa.settings
 
 import io.dreamz.simple2fa.Simple2FA
+import org.bukkit.configuration.Configuration
+import org.bukkit.configuration.ConfigurationSection
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
